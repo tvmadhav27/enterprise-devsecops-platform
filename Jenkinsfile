@@ -30,7 +30,7 @@ pipeline {
             steps {
                 dir('application') {
                     sh '''
-                        /home/jenkins/venv/bin/pytest -v test_app.py
+                        PYTHONPATH="$PWD" /home/jenkins/venv/bin/pytest -v test_app.py
                     '''
                 }
             }
