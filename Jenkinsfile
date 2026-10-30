@@ -28,9 +28,11 @@ pipeline {
 
         stage('Python Automated Tests') {
             steps {
-                sh '''
-                    /home/jenkins/venv/bin/pytest -v application/test_app.py
-                '''
+                dir('application') {
+                    sh '''
+                        /home/jenkins/venv/bin/pytest -v test_app.py
+                    '''
+                }
             }
         }
 
