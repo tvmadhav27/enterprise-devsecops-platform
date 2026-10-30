@@ -5,16 +5,32 @@ pipeline {
 
     options {
         timestamps()
-        timeout(time: 10, unit: 'MINUTES')
+        timeout(time: 15, unit: 'MINUTES')
     }
 
     stages {
         stage('Checkout Verification') {
             steps {
-                echo 'Source code is checked out by Jenkins.'
+                echo 'Source code checked out by Jenkins.'
                 sh 'pwd'
                 sh 'git --version'
                 sh 'ls -la'
+            }
+        }
+
+        stage('Install Python Dependencies') {
+            steps {
+                sh '''
+                    /home/jenkins/venv/bin/pip install -r application/requirements.txt
+                '''
+            }
+        }
+
+        stage('Python Automated Tests') {
+            steps {
+                sh '''
+                    /home/jenkins/venv/bin/pytest -v application/test_app.py
+                '''
             }
         }
 
@@ -22,7 +38,8 @@ pipeline {
             steps {
                 sh '''
                     test -f README.md
-                    test -f application/README.md
+                    test -f application/app.py
+                    test -f application/Dockerfile
                     echo "Project files validated successfully."
                 '''
             }
@@ -30,8 +47,7 @@ pipeline {
 
         stage('Build Summary') {
             steps {
-                echo 'Initial CI pipeline completed.'
-                echo 'Next: add application build, security scanning, and deployment.'
+                echo 'Application tests and project validation completed.'
             }
         }
     }
@@ -41,7 +57,7 @@ pipeline {
             echo 'CI pipeline succeeded.'
         }
         failure {
-            echo 'CI pipeline failed. Review the console output.'
+            echo 'CI pipeline failed. Review Console Output.'
         }
     }
 }
