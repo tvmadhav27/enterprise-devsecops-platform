@@ -21,7 +21,8 @@ pipeline {
         stage('Install Python Dependencies') {
             steps {
                 sh '''
-                    /home/jenkins/venv/bin/pip install -r application/requirements.txt
+                    python3 -m venv "$WORKSPACE/.venv"
+                    "$WORKSPACE/.venv/bin/pip" install -r application/requirements.txt
                 '''
             }
         }
@@ -30,7 +31,7 @@ pipeline {
             steps {
                 dir('application') {
                     sh '''
-                        PYTHONPATH="$PWD" /home/jenkins/venv/bin/pytest -v test_app.py
+                        PYTHONPATH="$PWD" "$WORKSPACE/.venv/bin/pytest" -v test_app.py
                     '''
                 }
             }
@@ -47,9 +48,19 @@ pipeline {
             }
         }
 
+        stage('Docker Image Build') {
+            steps {
+                sh '''
+                    docker build -t abc-retail-app:1.0 ./application
+                    docker image inspect abc-retail-app:1.0
+                    echo "Docker image built successfully."
+                '''
+            }
+        }
+
         stage('Build Summary') {
             steps {
-                echo 'Application tests and project validation completed.'
+                echo 'Application tests, project validation and Docker image build completed.'
             }
         }
     }
