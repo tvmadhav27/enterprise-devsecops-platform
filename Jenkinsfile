@@ -65,8 +65,9 @@ pipeline {
                       -v /var/run/docker.sock:/var/run/docker.sock \
                       aquasec/trivy:0.76.2 \
                       image --scanners vuln --severity HIGH,CRITICAL \
-                      abc-retail-app:1.0
+                      --format json abc-retail-app:1.0 > trivy-report.json
                 '''
+                archiveArtifacts artifacts: 'trivy-report.json', fingerprint: true
             }
         }
 
