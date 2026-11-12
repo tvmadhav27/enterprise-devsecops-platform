@@ -58,6 +58,18 @@ pipeline {
             }
         }
 
+        stage('Trivy Image Scan') {
+            steps {
+                sh '''
+                    docker run --rm \
+                      -v /var/run/docker.sock:/var/run/docker.sock \
+                      aquasec/trivy:0.76.2 \
+                      image --scanners vuln --severity HIGH,CRITICAL \
+                      abc-retail-app:1.0
+                '''
+            }
+        }
+
         stage('Build Summary') {
             steps {
                 echo 'Application tests, project validation and Docker image build completed.'
