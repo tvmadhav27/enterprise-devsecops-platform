@@ -63,7 +63,9 @@ pipeline {
                 sh '''
                     docker run --rm \
                       -v /var/run/docker.sock:/var/run/docker.sock \
+                      -v trivy-cache:/root/.cache/trivy \
                       aquasec/trivy:0.76.2 \
+                      --timeout 15m \
                       image --scanners vuln --severity HIGH,CRITICAL \
                       --format json abc-retail-app:1.0 > trivy-report.json
                 '''
