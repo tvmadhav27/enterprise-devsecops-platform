@@ -51,7 +51,7 @@ pipeline {
         stage('Docker Image Build') {
             steps {
                 sh '''
-                    docker build -t abc-retail-app:1.0 ./application
+                    docker build -t abc-retail-app:1.0 -t abc-retail-app:${BUILD_NUMBER} ./application
                     docker image inspect abc-retail-app:1.0
                     echo "Docker image built successfully."
                 '''
@@ -67,9 +67,27 @@ pipeline {
                       aquasec/trivy:0.76.2 \
                       --timeout 15m \
                       image --scanners vuln --severity HIGH,CRITICAL \
-                      --format json abc-retail-app:1.0 > trivy-report.json
+                      --format json abc-retail-app:${BUILD_NUMBER} > trivy-report.json
                 '''
                 archiveArtifacts artifacts: 'trivy-report.json', fingerprint: true
+            }
+        }
+
+        stage('Kubernetes Authentication Test') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'kubernetes-deployer-token', variable: 'K8S_TOKEN'),
+                    file(credentialsId: 'kubernetes-ca-certificate', variable: 'K8S_CA')
+                ]) {
+                    sh '''
+                        set +x
+                        kubectl \\
+                          --server=https://kubernetes:54815 \\
+                          --certificate-authority="$K8S_CA" \\
+                          --token="$K8S_TOKEN" \\
+                          auth can-i create deployments --namespace default
+                    '''
+                }
             }
         }
 
