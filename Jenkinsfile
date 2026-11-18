@@ -126,6 +126,43 @@ pipeline {
             }
         }
 
+        stage('Kubernetes Deployment') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'kubernetes-deployer-token', variable: 'K8S_TOKEN'),
+                    file(credentialsId: 'kubernetes-ca-certificate', variable: 'K8S_CA')
+                ]) {
+                    sh '''
+                        set +x
+                        echo "Deploying ABC Retail application to Kubernetes..."
+
+                        kubectl \
+                          --server=https://kubernetes:54815 \
+                          --certificate-authority="$K8S_CA" \
+                          --token="$K8S_TOKEN" \
+                          set image deployment/abc-retail-app \
+                          abc-retail-app=docker.io/tvmadhav27/abc-retail-app:${BUILD_NUMBER} \
+                          --namespace default
+
+                        kubectl \
+                          --server=https://kubernetes:54815 \
+                          --certificate-authority="$K8S_CA" \
+                          --token="$K8S_TOKEN" \
+                          rollout status deployment/abc-retail-app \
+                          --namespace default --timeout=180s
+
+                        kubectl \
+                          --server=https://kubernetes:54815 \
+                          --certificate-authority="$K8S_CA" \
+                          --token="$K8S_TOKEN" \
+                          get pods --namespace default -l app=abc-retail-app
+
+                        echo "Kubernetes deployment completed successfully."
+                    '''
+                }
+            }
+        }
+
         stage('Build Summary') {
             steps {
                 echo 'Application tests, project validation and Docker image build completed.'
