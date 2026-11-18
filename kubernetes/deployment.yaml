@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: abc-retail-app
-          image: abc-retail-app:1.0
+          image: docker.io/tvmadhav27/abc-retail-app:20
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
