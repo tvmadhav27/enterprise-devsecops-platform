@@ -73,6 +73,33 @@ pipeline {
             }
         }
 
+        stage('Docker Hub Push') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set +x
+                        echo "Publishing Docker image to Docker Hub..."
+
+                        echo "$DOCKERHUB_TOKEN" | docker login --username "$DOCKERHUB_USER" --password-stdin
+
+                        trap 'docker logout >/dev/null 2>&1 || true' EXIT
+
+                        docker tag abc-retail-app:${BUILD_NUMBER} "$DOCKERHUB_USER/abc-retail-app:${BUILD_NUMBER}"
+
+                        docker push "$DOCKERHUB_USER/abc-retail-app:${BUILD_NUMBER}"
+
+                        echo "Docker image published successfully."
+                    '''
+                }
+            }
+        }
+
         stage('Kubernetes Authentication Test') {
             steps {
                 withCredentials([
