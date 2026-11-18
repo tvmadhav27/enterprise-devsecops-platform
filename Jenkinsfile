@@ -81,11 +81,19 @@ pipeline {
                 ]) {
                     sh '''
                         set +x
+                        echo "Checking Kubernetes deployment permissions..."
+
                         kubectl \\
                           --server=https://kubernetes:54815 \\
                           --certificate-authority="$K8S_CA" \\
                           --token="$K8S_TOKEN" \\
                           auth can-i create deployments --namespace default
+
+                        kubectl \\
+                          --server=https://kubernetes:54815 \\
+                          --certificate-authority="$K8S_CA" \\
+                          --token="$K8S_TOKEN" \\
+                          auth can-i patch deployments.apps --namespace default
                     '''
                 }
             }
