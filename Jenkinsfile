@@ -134,15 +134,18 @@ pipeline {
                 ]) {
                     sh '''
                         set +x
-                        echo "Deploying ABC Retail application to Kubernetes..."
+                        echo "Deploying ABC Retail application using Kubernetes manifest..."
+
+                        TMP_MANIFEST="$(mktemp)"
+                        trap 'rm -f "$TMP_MANIFEST"' EXIT
+
+                        sed "s|image: docker.io/tvmadhav27/abc-retail-app:.*|image: docker.io/tvmadhav27/abc-retail-app:${BUILD_NUMBER}|" kubernetes/deployment.yaml > "$TMP_MANIFEST"
 
                         kubectl \
                           --server=https://kubernetes:54815 \
                           --certificate-authority="$K8S_CA" \
                           --token="$K8S_TOKEN" \
-                          set image deployment/abc-retail-app \
-                          abc-retail-app=docker.io/tvmadhav27/abc-retail-app:${BUILD_NUMBER} \
-                          --namespace default
+                          apply -f "$TMP_MANIFEST"
 
                         kubectl \
                           --server=https://kubernetes:54815 \
