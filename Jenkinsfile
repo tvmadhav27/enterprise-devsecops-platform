@@ -112,14 +112,16 @@ pipeline {
                         echo "Checking Kubernetes certificate authentication..."
 
                         kubectl \
-                          --server=https://kubernetes:54815 \
+                          --server=https://host.docker.internal:54815 \
+                          --tls-server-name=kubernetes \
                           --certificate-authority="$K8S_CA" \
                           --client-certificate="$K8S_CERT" \
                           --client-key="$K8S_KEY" \
                           auth can-i create deployments --namespace default
 
                         kubectl \
-                          --server=https://kubernetes:54815 \
+                          --server=https://host.docker.internal:54815 \
+                          --tls-server-name=kubernetes \
                           --certificate-authority="$K8S_CA" \
                           --client-certificate="$K8S_CERT" \
                           --client-key="$K8S_KEY" \
@@ -146,14 +148,16 @@ pipeline {
                         sed "s|image: docker.io/tvmadhav27/abc-retail-app:.*|image: docker.io/tvmadhav27/abc-retail-app:${BUILD_NUMBER}|" kubernetes/deployment.yaml > "$TMP_MANIFEST"
 
                         kubectl \
-                          --server=https://kubernetes:54815 \
+                          --server=https://host.docker.internal:54815 \
+                          --tls-server-name=kubernetes \
                           --certificate-authority="$K8S_CA" \
                           --client-certificate="$K8S_CERT" \
                           --client-key="$K8S_KEY" \
                           apply -f "$TMP_MANIFEST"
 
                         kubectl \
-                          --server=https://kubernetes:54815 \
+                          --server=https://host.docker.internal:54815 \
+                          --tls-server-name=kubernetes \
                           --certificate-authority="$K8S_CA" \
                           --client-certificate="$K8S_CERT" \
                           --client-key="$K8S_KEY" \
@@ -161,7 +165,8 @@ pipeline {
                           --namespace default --timeout=180s
 
                         kubectl \
-                          --server=https://kubernetes:54815 \
+                          --server=https://host.docker.internal:54815 \
+                          --tls-server-name=kubernetes \
                           --certificate-authority="$K8S_CA" \
                           --client-certificate="$K8S_CERT" \
                           --client-key="$K8S_KEY" \
