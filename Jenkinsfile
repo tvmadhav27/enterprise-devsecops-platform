@@ -103,23 +103,26 @@ pipeline {
         stage('Kubernetes Authentication Test') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'kubernetes-deployer-token', variable: 'K8S_TOKEN'),
+                    file(credentialsId: 'kubernetes-client-certificate', variable: 'K8S_CERT'),
+                    file(credentialsId: 'kubernetes-client-private-key', variable: 'K8S_KEY'),
                     file(credentialsId: 'kubernetes-ca-certificate', variable: 'K8S_CA')
                 ]) {
                     sh '''
                         set +x
-                        echo "Checking Kubernetes deployment permissions..."
+                        echo "Checking Kubernetes certificate authentication..."
 
-                        kubectl \\
-                          --server=https://kubernetes:54815 \\
-                          --certificate-authority="$K8S_CA" \\
-                          --token="$K8S_TOKEN" \\
+                        kubectl \
+                          --server=https://kubernetes:54815 \
+                          --certificate-authority="$K8S_CA" \
+                          --client-certificate="$K8S_CERT" \
+                          --client-key="$K8S_KEY" \
                           auth can-i create deployments --namespace default
 
-                        kubectl \\
-                          --server=https://kubernetes:54815 \\
-                          --certificate-authority="$K8S_CA" \\
-                          --token="$K8S_TOKEN" \\
+                        kubectl \
+                          --server=https://kubernetes:54815 \
+                          --certificate-authority="$K8S_CA" \
+                          --client-certificate="$K8S_CERT" \
+                          --client-key="$K8S_KEY" \
                           auth can-i patch deployments.apps --namespace default
                     '''
                 }
@@ -129,12 +132,13 @@ pipeline {
         stage('Kubernetes Deployment') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'kubernetes-deployer-token', variable: 'K8S_TOKEN'),
+                    file(credentialsId: 'kubernetes-client-certificate', variable: 'K8S_CERT'),
+                    file(credentialsId: 'kubernetes-client-private-key', variable: 'K8S_KEY'),
                     file(credentialsId: 'kubernetes-ca-certificate', variable: 'K8S_CA')
                 ]) {
                     sh '''
                         set +x
-                        echo "Deploying ABC Retail application using Kubernetes manifest..."
+                        echo "Deploying ABC Retail application using Kubernetes manifest and client certificate..."
 
                         TMP_MANIFEST="$(mktemp)"
                         trap 'rm -f "$TMP_MANIFEST"' EXIT
@@ -144,20 +148,23 @@ pipeline {
                         kubectl \
                           --server=https://kubernetes:54815 \
                           --certificate-authority="$K8S_CA" \
-                          --token="$K8S_TOKEN" \
+                          --client-certificate="$K8S_CERT" \
+                          --client-key="$K8S_KEY" \
                           apply -f "$TMP_MANIFEST"
 
                         kubectl \
                           --server=https://kubernetes:54815 \
                           --certificate-authority="$K8S_CA" \
-                          --token="$K8S_TOKEN" \
+                          --client-certificate="$K8S_CERT" \
+                          --client-key="$K8S_KEY" \
                           rollout status deployment/abc-retail-app \
                           --namespace default --timeout=180s
 
                         kubectl \
                           --server=https://kubernetes:54815 \
                           --certificate-authority="$K8S_CA" \
-                          --token="$K8S_TOKEN" \
+                          --client-certificate="$K8S_CERT" \
+                          --client-key="$K8S_KEY" \
                           get pods --namespace default -l app=abc-retail-app
 
                         echo "Kubernetes deployment completed successfully."
