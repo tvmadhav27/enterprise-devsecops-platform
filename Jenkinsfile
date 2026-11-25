@@ -155,14 +155,43 @@ pipeline {
                           --client-key="$K8S_KEY" \
                           apply -f "$TMP_MANIFEST"
 
-                        kubectl \
-                          --server=https://host.docker.internal:54815 \
-                          --tls-server-name=kubernetes \
-                          --certificate-authority="$K8S_CA" \
-                          --client-certificate="$K8S_CERT" \
-                          --client-key="$K8S_KEY" \
-                          rollout status deployment/abc-retail-app \
-                          --namespace default --timeout=180s
+                        echo "Waiting for Kubernetes deployment to become fully available..."
+
+                        ATTEMPT=1
+                        MAX_ATTEMPTS=60
+
+                        while [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
+                            STATUS=$(kubectl \
+                              --server=https://host.docker.internal:54815 \
+                              --tls-server-name=kubernetes \
+                              --certificate-authority="$K8S_CA" \
+                              --client-certificate="$K8S_CERT" \
+                              --client-key="$K8S_KEY" \
+                              get deployment abc-retail-app --namespace default \
+                              -o jsonpath='{.metadata.generation} {.status.observedGeneration} {.spec.replicas} {.status.updatedReplicas} {.status.availableReplicas}' 2>/dev/null) || STATUS=""
+
+                            set -- $STATUS
+                            GENERATION=${1:-0}
+                            OBSERVED=${2:-0}
+                            DESIRED=${3:-0}
+                            UPDATED=${4:-0}
+                            AVAILABLE=${5:-0}
+
+                            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: desired=$DESIRED updated=$UPDATED available=$AVAILABLE"
+
+                            if [ "$GENERATION" -gt 0 ] && [ "$OBSERVED" -ge "$GENERATION" ] && [ "$UPDATED" -eq "$DESIRED" ] && [ "$AVAILABLE" -eq "$DESIRED" ]; then
+                                echo "Kubernetes deployment successfully rolled out."
+                                break
+                            fi
+
+                            if [ "$ATTEMPT" -eq "$MAX_ATTEMPTS" ]; then
+                                echo "ERROR: Kubernetes deployment did not become ready within 5 minutes."
+                                exit 1
+                            fi
+
+                            ATTEMPT=$((ATTEMPT + 1))
+                            sleep 5
+                        done
 
                         kubectl \
                           --server=https://host.docker.internal:54815 \
